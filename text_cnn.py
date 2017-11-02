@@ -6,6 +6,15 @@ class TextCNN(object):
     """
     A CNN for text classification.
     Uses an embedding layer, followed by a convolutional, max-pooling and softmax layer.
+
+        <Parameters>
+        - sequence_length: 최대 문장 길이
+        - num_classes: 클래스 개수
+        - vocab_size: 등장 단어 수
+        - embedding_size: 각 단어에 해당되는 임베디드 벡터의 차원
+        - filter_sizes: convolutional filter들의 사이즈 (= 각 filter가 몇 개의 단어를 볼 것인가?) (예: "3, 4, 5")
+        - num_filters: 각 filter size 별 filter 수
+        - l2_reg_lambda: 각 weights, biases에 대한 l2 regularization 정도
     """
     def __init__(
       self, sequence_length, num_classes, vocab_size,
@@ -21,6 +30,7 @@ class TextCNN(object):
 
         # Embedding layer
         with tf.device('/cpu:0'), tf.name_scope("embedding"):
+        # with tf.device('/gpu:0'), tf.name_scope("embedding"):
             W = tf.Variable(
                 tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
                 name="W")
@@ -67,6 +77,7 @@ class TextCNN(object):
                 "W",
                 shape=[num_filters_total, num_classes],
                 initializer=tf.contrib.layers.xavier_initializer())
+            # W = tf.Variable(tf.truncated_normal([num_filters_total, num_classes], stddev=0.1), name="W")
             b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)

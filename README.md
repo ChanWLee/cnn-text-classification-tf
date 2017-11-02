@@ -65,3 +65,11 @@ Train:
 
 - [Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1408.5882)
 - [A Sensitivity Analysis of (and Practitioners' Guide to) Convolutional Neural Networks for Sentence Classification](http://arxiv.org/abs/1510.03820)
+
+## mecab
+- mecab
+- mecab-config
+- mecab-ipadic
+- mecab-ko-dic
+- python3 mecab 0.996
+> [have apply in python3](https://bitbucket.org/eunjeon/mecab-python-0.996)

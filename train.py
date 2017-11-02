@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
+import random
 
 import tensorflow as tf
 import os
@@ -14,15 +15,28 @@ from word_data_processor import WordDataProcessor
 # ==================================================
 
 # Model Hyperparameters
-tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
+"""
+    <Parameters>
+        - embedding_dim: 각 단어에 해당되는 임베디드 벡터의 차원,  차원축소가필요( 일정차원을 넘으면 성능떨어짐)
+        - filter_sizes: convolutional filter들의 사이즈 (= 각 filter가 몇 개의 단어를 볼 것인가?) (예: "3, 4, 5")
+        - num_filters: 각 filter size 별 filter 수
+        - l2_reg_lambda: 각 weights, biases에 대한 l2 regularization 정도중요( 0.001 기본, 아주중요 0.1)
+        - batch_size: 몇개의 데이터셋을 가지고 와서 웨이트를 업데이트 (배치사이즈1,데이터셋1만, 1개씩쪼개서1만번)
+        - num_epochs: 데이터셋을 한번 다 돌면 epoch 1
+        
+        - sequence_length: 최대 문장 길이
+        - num_classes: 클래스 개수
+        - vocab_size: 등장 단어 수
+"""
+tf.flags.DEFINE_integer("embedding_dim", 64, "Dimensionality of character embedding (default: 128)")
+tf.flags.DEFINE_string("filter_sizes", "5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.0, "L2 regularizaion lambda (default: 0.0)")
+tf.flags.DEFINE_float("dropout_keep_prob", [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 256, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 400, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -60,6 +74,7 @@ with tf.Graph().as_default():
       allow_soft_placement=FLAGS.allow_soft_placement,
       log_device_placement=FLAGS.log_device_placement)
     sess = tf.Session(config=session_conf)
+
     with sess.as_default():
         cnn = TextCNN(
             sequence_length=x_train.shape[1],
@@ -125,13 +140,15 @@ with tf.Graph().as_default():
             feed_dict = {
               cnn.input_x: x_batch,
               cnn.input_y: y_batch,
-              cnn.dropout_keep_prob: FLAGS.dropout_keep_prob
+              # cnn.dropout_keep_prob: FLAGS.dropout_keep_prob
+              cnn.dropout_keep_prob: random.choice(FLAGS.dropout_keep_prob)
             }
             _, step, summaries, loss, accuracy = sess.run(
                 [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
                 feed_dict)
+
             time_str = datetime.datetime.now().isoformat()
-            print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
+            # print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
             train_summary_writer.add_summary(summaries, step)
 
         def dev_step(x_batch, y_batch, writer=None):
