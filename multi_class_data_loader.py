@@ -27,17 +27,19 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("train_data_file", "./twitter/10man", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/5man", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw30000", "Data source for the training data.")
+        # self.__flags.DEFINE_string("train_data_file", "./twitter/pno5man", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/pno2man", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw10000", "Data source for the training data.")
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw5000", "Data source for the training data.")
+        # self.__flags.DEFINE_string("train_data_file", "./twitter/raw5000", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw1000", "Data source for the training data.")
-        # self.__flags.DEFINE_string("train_data_file", "./twitter/pn4699", "Data source for the training data.")
+        # self.__flags.DEFINE_string("train_data_file", "./twitter/pno300", "Data source for the training data.")
 
         # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw10000", "Data source for the training data.")
         # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw5000", "Data source for the training data.")
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw1000", "Data source for the training data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw1000", "Data source for the training data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw500", "Data source for the training data.")
         # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno30", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno300", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno/part_o20", "Data source for the training data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno/part_n20", "Data source for the training data.")
 
         self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
 
@@ -90,11 +92,11 @@ class MultiClassDataLoader(object):
                 class_vectors[cls] = one_hot_vectors[i]
             tsvin = csv.reader(tsvin, delimiter=',')
             for row in tsvin:
-                # leng = len(row) - 1
                 data = self.__data_processor.clean_data(row[0])
                 x_text.append(data)
                 y.append(class_vectors[row[1]])
-                # y.append(class_vectors[row[leng]])
+            # x_text= x_text+x_text
+            # y= y+y
         return [x_text, np.array(y)]
 
     def __classes(self):

@@ -7,7 +7,9 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
     data = np.array(data)
     data_size = len(data)
     num_batches_per_epoch = int(len(data)/batch_size) + 1
+    # start_time = datetime.datetime.now()
     for epoch in range(num_epochs):
+        print('Epoch {}'.format(epoch))
         # Shuffle the data at each epoch
         if shuffle:
             shuffle_indices = np.random.permutation(np.arange(data_size))
@@ -18,3 +20,5 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
             start_index = batch_num * batch_size
             end_index = min((batch_num + 1) * batch_size, data_size)
             yield shuffled_data[start_index:end_index]
+
+    # print("time {}".format((datetime.datetime.now()-start_time).iso_format()))
