@@ -30,13 +30,14 @@ from word_data_processor import WordDataProcessor
 """
 tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
 tf.flags.DEFINE_string("filter_sizes", "2,3,4,5,6,7,8,9,10,11,12,13,14", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 64, "Number of filters per filter size (default: 128)")
-tf.flags.DEFINE_float("dropout_keep_prob", [0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.03, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
+# tf.flags.DEFINE_float("dropout_keep_prob", [0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", [1.0], "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 10, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -77,6 +78,7 @@ with tf.Graph().as_default():
 
     with sess.as_default():
         cnn = TextCNN(
+            batch_normalization=True,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],
             vocab_size=len(vocab_processor.vocabulary_),
@@ -88,7 +90,7 @@ with tf.Graph().as_default():
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         # optimizer = tf.train.AdamOptimizer(1e-3)#default
-        optimizer = tf.train.AdamOptimizer(15e-4)#default
+        optimizer = tf.train.AdamOptimizer(45e-3)
         grads_and_vars = optimizer.compute_gradients(cnn.loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -142,8 +144,8 @@ with tf.Graph().as_default():
             feed_dict = {
               cnn.input_x: x_batch,
               cnn.input_y: y_batch,
-              # cnn.dropout_keep_prob: FLAGS.dropout_keep_prob
-              cnn.dropout_keep_prob: random_dropout
+              cnn.dropout_keep_prob: random_dropout,
+              cnn.phase_train: True
             }
             _, step, summaries, loss, accuracy = sess.run(
                 [train_op, global_step, train_summary_op, cnn.loss, cnn.accuracy],
@@ -160,7 +162,8 @@ with tf.Graph().as_default():
             feed_dict = {
               cnn.input_x: x_batch,
               cnn.input_y: y_batch,
-              cnn.dropout_keep_prob: 1.0
+              cnn.dropout_keep_prob: 1.0,
+              cnn.phase_train: False
             }
             step, summaries, loss, accuracy = sess.run(
                 [global_step, dev_summary_op, cnn.loss, cnn.accuracy],
