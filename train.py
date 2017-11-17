@@ -28,18 +28,18 @@ from word_data_processor import WordDataProcessor
         - num_classes: 클래스 개수
         - vocab_size: 등장 단어 수
 """
-tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
+tf.flags.DEFINE_integer("embedding_dim", 16, "Dimensionality of character embedding (default: 128)")
 tf.flags.DEFINE_string("filter_sizes", "2,3,4,5,6,7,8,9,10,11,12,13,14", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 128, "Number of filters per filter size (default: 128)")
+tf.flags.DEFINE_integer("num_filters", 16, "Number of filters per filter size (default: 128)")
 # tf.flags.DEFINE_float("dropout_keep_prob", [0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("dropout_keep_prob", [1.0], "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("batch_size", 32, "Batch Size (default: 64)")
 tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("evaluate_every", 200, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -90,7 +90,7 @@ with tf.Graph().as_default():
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         # optimizer = tf.train.AdamOptimizer(1e-3)#default
-        optimizer = tf.train.AdamOptimizer(45e-3)
+        optimizer = tf.train.AdamOptimizer(3e-2)
         grads_and_vars = optimizer.compute_gradients(cnn.loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 
@@ -153,7 +153,8 @@ with tf.Graph().as_default():
 
             # time_str = datetime.datetime.now().isoformat()
             # print("{}: step {}, dropout {}, loss {:g}, acc {:g}".format(time_str, step, random_dropout, loss, accuracy))
-            train_summary_writer.add_summary(summaries, step)
+            if step % (FLAGS.evaluate_every/5) == 0:
+                train_summary_writer.add_summary(summaries, step)
 
         def dev_step(x_batch, y_batch, writer=None):
             """
@@ -173,18 +174,86 @@ with tf.Graph().as_default():
             if writer:
                 writer.add_summary(summaries, step)
 
+        def serving():
+            graph = sess.graph
+            with graph.as_default():
+                # export_path = os.path.join(
+                #     tf.compat.as_bytes(export_path_base))
+                export_path = os.path.abspath(os.path.join(out_dir, "serving"))
+                print('Exporting trained model to', export_path)
+                builder = tf.saved_model.builder.SavedModelBuilder(export_path)
+
+                # serialized_tf_example = tf.placeholder(tf.string, name='tf_example')
+
+                input_x = graph.get_operation_by_name("input_x").outputs[0]
+                input_y = graph.get_operation_by_name("input_y").outputs[0]
+                predictions = graph.get_operation_by_name("output/predictions").outputs[0]
+
+                # Build the signature_def_map.
+                classification_inputs = tf.saved_model.utils.build_tensor_info(
+                    input_x)
+                classification_outputs_classes = tf.saved_model.utils.build_tensor_info(
+                    predictions)
+                classification_outputs_scores = tf.saved_model.utils.build_tensor_info(input_y)
+
+                classification_signature = (
+                    tf.saved_model.signature_def_utils.build_signature_def(
+                        inputs={
+                            tf.saved_model.signature_constants.CLASSIFY_INPUTS:
+                                classification_inputs
+                        },
+                        outputs={
+                            tf.saved_model.signature_constants.CLASSIFY_OUTPUT_CLASSES:
+                                classification_outputs_classes,
+                            tf.saved_model.signature_constants.CLASSIFY_OUTPUT_SCORES:
+                                classification_outputs_scores
+                        },
+                        method_name=tf.saved_model.signature_constants.CLASSIFY_METHOD_NAME))
+
+                tensor_info_x = tf.saved_model.utils.build_tensor_info(input_x)
+                tensor_info_y = tf.saved_model.utils.build_tensor_info(input_y)
+
+                prediction_signature = (
+                    tf.saved_model.signature_def_utils.build_signature_def(
+                        inputs={'images': tensor_info_x},
+                        outputs={'scores': tensor_info_y},
+                        method_name="positive_negative"))
+                        # method_name=tf.saved_model.signature_constants.PREDICT_METHOD_NAME))
+
+                legacy_init_op = tf.group(tf.tables_initializer(), name='legacy_init_op')
+
+                builder.add_meta_graph_and_variables(
+                    sess, [tf.saved_model.tag_constants.SERVING],
+                    signature_def_map={
+                        'predict_images':
+                            prediction_signature,
+                        tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY:
+                            classification_signature,
+                    },
+                    legacy_init_op=legacy_init_op)
+
+                builder.save()
+
+                print
+                'Done exporting!'
+
+
         # Generate batches
         batches = data_helpers.batch_iter(
-            list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs, shuffle=True)
+            list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
         # Training loop. For each batch...
         for batch in batches:
-            x_batch, y_batch = zip(*batch)
+            try:
+                x_batch, y_batch = zip(*batch)
+            except:
+                pass
             train_step(x_batch, y_batch)
             current_step = tf.train.global_step(sess, global_step)
             if current_step % FLAGS.evaluate_every == 0:
                 print("\nEvaluation:")
                 dev_step(x_dev, y_dev, writer=dev_summary_writer)
-                print("")
+                # print("")
             if current_step % FLAGS.checkpoint_every == 0:
                 path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                 print("Saved model checkpoint to {}\n".format(path))
+        # serving()

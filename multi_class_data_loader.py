@@ -32,7 +32,6 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw10000", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw5000", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw1000", "Data source for the training data.")
-        # self.__flags.DEFINE_string("train_data_file", "./twitter/pno300", "Data source for the training data.")
 
         # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw10000", "Data source for the training data.")
         # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw5000", "Data source for the training data.")
