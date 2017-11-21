@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import print_function
 
 # This is a placeholder for a Google-internal import.
@@ -11,7 +13,7 @@ from tensorflow_serving.apis import prediction_service_pb2
 
 tf.app.flags.DEFINE_string('server', 'localhost:9000',
                            'PredictionService host:port')
-tf.app.flags.DEFINE_string('text', '', 'text')
+tf.app.flags.DEFINE_string('text', '학교에 가기 싫어요', 'text')
 tf.app.flags.DEFINE_string('file', '', 'path to text file')
 FLAGS = tf.app.flags.FLAGS
 
@@ -20,27 +22,30 @@ def main(_):
   host, port = FLAGS.server.split(':')
   channel = implementations.insecure_channel(host, int(port))
   stub = prediction_service_pb2.beta_create_PredictionService_stub(channel)
-  # Send request
-  with open(FLAGS.file, 'rb') as f:
-    # See prediction_service.proto for gRPC request/response details.
-    data = f.read()
+  if FLAGS.file:
+    with open(FLAGS.file, 'rb') as f:
+      # See prediction_service.proto for gRPC request/response details.
+      data = f.read()
+      request = predict_pb2.PredictRequest()
+      request.model_spec.name = 'inception'
+      request.model_spec.signature_name = 'predict_images'
+      request.inputs['images'].CopyFrom(
+          tf.contrib.util.make_tensor_proto(data, shape=[1]))
+      result = stub.Predict(request, 10.0)  # 10 secs timeout
+      print(result)
+
+  if FLAGS.text:
+    data = FLAGS.text
+    print('data:{}'.format(data))
+  # data = '학교에 가기 싫어'
     request = predict_pb2.PredictRequest()
     request.model_spec.name = 'inception'
     request.model_spec.signature_name = 'predict_images'
     request.inputs['images'].CopyFrom(
         tf.contrib.util.make_tensor_proto(data, shape=[1]))
     result = stub.Predict(request, 10.0)  # 10 secs timeout
-    print(result)
-
-  with FLAGS.text as data:
-    request = predict_pb2.PredictRequest()
-    request.model_spec.name = 'inception'
-    request.model_spec.signature_name = 'predict_images'
-    request.inputs['images'].CopyFrom(
-        tf.contrib.util.make_tensor_proto(data, shape=[1]))
-    result = stub.Predict(request, 10.0)  # 10 secs timeout
-    print(result)
-
+    print('result:{}'.format(result))
 
 if __name__ == '__main__':
   tf.app.run()
+  # main()
