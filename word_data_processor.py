@@ -8,7 +8,7 @@ from nlp.mecab import process
 class WordDataProcessor(object):
     def vocab_processor(_, *texts):
         max_document_length = 0
-        min_frequency = 200
+        min_frequency = 400
         for text in texts:
             max_doc_len = max([len(line.split(" ")) for line in text])
             if max_doc_len > max_document_length:
@@ -24,7 +24,9 @@ class WordDataProcessor(object):
     def clean_data(_, string):
         try:
             if detect(string) != 'ko':
-                pass
+                return ''
+            if len(string) > 80:
+                return ''
         except:
             pass
         string = process(string)
