@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import print_function
@@ -6,20 +7,21 @@ import tensorflow as tf
 from grpc.beta import implementations
 from tensorflow_serving.apis import predict_pb2
 from tensorflow_serving.apis import prediction_service_pb2
-from tensorflow.contrib import learn
 import numpy as np
+import os
+from tensorflow.contrib import learn
 
 # This is a placeholder for a Google-internal import.
 
 tf.app.flags.DEFINE_string('server', 'localhost:9000',
                            'PredictionService host:port')
-tf.app.flags.DEFINE_string('text', '학교에 가기 싫어요', 'text')
 tf.app.flags.DEFINE_string('file', '', 'path to text file')
 tf.app.flags.DEFINE_string('vocab', '', 'path to vocab file')
 FLAGS = tf.app.flags.FLAGS
 
 
-def transform_vocab(vocab_path, data):
+def transform_vocab(data):
+    vocab_path = os.path.join(FLAGS.vocab)
     vocab_processor = learn.preprocessing.VocabularyProcessor.restore(vocab_path)
     return np.array(list(vocab_processor.transform(data)))
 
@@ -36,7 +38,7 @@ def main(_):
                 data_list.append(line)
             x_test = data
             if FLAGS.vocab:
-                x_test = transform_vocab(FLAGS.vocab, data)
+                x_test = transform_vocab(data)
             tf_data = [int(i) for i in x_test]
             leng_data = len(data_list)
 
