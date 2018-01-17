@@ -26,6 +26,7 @@ class WordDataProcessor(object):
             if detect(string) != 'ko':
                 return ''
             if len(string) > 80:
+                # occur SIGKILL when cast list(array).. long string
                 return ''
         except:
             pass

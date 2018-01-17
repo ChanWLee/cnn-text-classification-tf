@@ -61,19 +61,14 @@ class MultiClassDataLoader(object):
         self.vocab_processor = self.__data_processor.vocab_processor(x_train, x_dev)
         # x_train = np.array(list(self.vocab_processor.fit_transform(x_train)))
         aa = self.vocab_processor.fit_transform(x_train)
-        try:
-            print('\n--------------\nbefore list')
-            aa = list(aa)
-            print('\n--------------\nafter list')
-            x_train = np.array(aa)
-
-        except Exception as e:
-            print(str(e))
+        aa = list(aa)
+        x_train = np.array(aa)
 
         # Build vocabulary
         # x_dev = np.array(list(self.vocab_processor.fit_transform(x_dev)))
         bb = self.vocab_processor.fit_transform(x_dev)
-        x_dev = np.array(list(bb))
+        bb = list(bb)
+        x_dev = np.array(bb)
         return [x_train, y_train, x_dev, y_dev]
 
     def restore_vocab_processor(self, vocab_path):
@@ -122,7 +117,6 @@ class MultiClassDataLoader(object):
                 # y.append(class_vectors[row[1]])
                 # x_text= x_text+x_text
                 # y= y+y
-        print(len(x_text))
         return [x_text, np.array(y)]
 
     def __classes(self):
