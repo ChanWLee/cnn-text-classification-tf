@@ -26,6 +26,8 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw_10_00_00", "Data source for the training data.")
+        # self.__flags.DEFINE_string("train_data_file", "./twitter/raw_10_00", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_10_01", "Data source for the training data.")
         self.__flags.DEFINE_string("train_data_file", "./twitter/raw_train", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw500", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw5man", "Data source for the training data.")
@@ -36,14 +38,15 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw5000", "Data source for the training data.")
         # self.__flags.DEFINE_string("train_data_file", "./twitter/raw1000", "Data source for the training data.")
 
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_00_01", "Data source for the training data.")
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw10000", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw5000", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw1000", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw500", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno30", "Data source for the training data.")
-        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno/part_n20", "Data source for the training data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_00_01_500", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_01_01", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw10000", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw5000", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw1000", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/raw500", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno30", "Data source for cross validation data.")
+        # self.__flags.DEFINE_string("dev_data_file", "./twitter/pno/part_n20", "Data source for cross validation data.")
 
         self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
 
@@ -85,6 +88,11 @@ class MultiClassDataLoader(object):
         x_dev, y_dev = self.__load_data_and_labels(self.__dev_data_file)
         return [x_dev, y_dev]
 
+    def load_train_data_and_labels(self):
+        self.__resolve_params()
+        x_train, y_train = self.__load_data_and_labels(self.__train_data_file)
+        return [x_train, y_train]
+
     def load_data_and_labels(self):
         self.__resolve_params()
         x_train, y_train = self.__load_data_and_labels(self.__train_data_file)
@@ -103,17 +111,25 @@ class MultiClassDataLoader(object):
             for i, cls in enumerate(classes):
                 class_vectors[cls] = one_hot_vectors[i]
             tsvin = csv.reader(tsvin, delimiter=',')
-            cnt = 0
             for row in tsvin:
-                cnt += 1
-                if len(row) < 2:
+                leng_row = len(row)
+                text_col = leng_row-1
+                if leng_row < 2:
                     continue
-                data = self.__data_processor.clean_data(row[1])
+                data = self.__data_processor.clean_data(row[text_col])
                 # data = self.__data_processor.clean_data(row[0])
                 if data == '':
                     continue
                 x_text.append(data)
-                y.append(class_vectors[row[0]])
+                if False:
+                    class_vector = class_vectors[row[0]]
+                    if text_col > 1:
+                        for col in row[1:(text_col-1)]:
+                            class_vector.append(row[col])
+                    #print('.....class_vectors:{}'.format(class_vectors))
+                    y.append(class_vector)
+                else:
+                    y.append(class_vectors[row[0]])
                 # y.append(class_vectors[row[1]])
                 # x_text= x_text+x_text
                 # y= y+y

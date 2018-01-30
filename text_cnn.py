@@ -52,8 +52,8 @@ class TextCNN(object):
                     strides=[1, 1, 1, 1],
                     padding="VALID",
                     name="conv")
-                if batch_normalization:
-                    conv = self.batch_norm(conv, num_filters, self.phase_train)
+                # if batch_normalization:
+                #     conv = self.batch_norm(conv, num_filters, self.phase_train)
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
