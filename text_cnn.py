@@ -52,8 +52,8 @@ class TextCNN(object):
                     strides=[1, 1, 1, 1],
                     padding="VALID",
                     name="conv")
-                # if batch_normalization:
-                #     conv = self.batch_norm(conv, num_filters, self.phase_train)
+                if batch_normalization:
+                    conv = self.batch_norm(conv, num_filters, self.phase_train)
                 # Apply nonlinearity
                 h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
@@ -89,7 +89,7 @@ class TextCNN(object):
 
         # CalculateMean cross-entropy loss
         with tf.name_scope("loss"):
-            losses = tf.nn.softmax_cross_entropy_with_logits(logits=self.scores, labels=self.input_y)
+            losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
             self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
         # Accuracy

@@ -30,32 +30,33 @@ from word_data_processor import WordDataProcessor
         - vocab_size: 등장 단어 수
 """
 tf.flags.DEFINE_integer("embedding_dim", 64, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3,5,7,9", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 # tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 192, "Number of filters per filter size (default: 128)")
-# tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", [0.4], "Dropout keep probability (default: 0.5)")
+#tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.4, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 1, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 50, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
-tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
+tf.flags.DEFINE_boolean("log_device_placement", True, "Log placement of ops on devices")
 
 data_loader = MultiClassDataLoader(tf.flags, WordDataProcessor())
 data_loader.define_flags()
 
 FLAGS = tf.flags.FLAGS
-FLAGS._parse_flags()
+FLAGS.mark_as_parsed()
 print("\nParameters:")
-for attr, value in sorted(FLAGS.__flags.items()):
+p_param = list()
+for attr, value in sorted(FLAGS.flag_values_dict().items()):
     print("{}={}".format(attr.upper(), value))
+    p_param.append('{}={}'.format(attr.upper(), value))
 print("")
-
 
 # Data Preparatopn
 # ==================================================
@@ -70,10 +71,12 @@ try:
     vocab_processor = data_loader.restore_vocab_processor(vocab_path)
 
     # using prev vocab
+    print("load train, dev data...{}".format(datetime.datetime.now().isoformat()))
     x_train, y_train = data_loader.load_train_data_and_labels()
     x_dev, y_dev = data_loader.load_dev_data_and_labels()
     #vocab_processor = data_loader.restore_vocab_processor(vocab_path)
 
+    print("transform train, dev data by vocab...{}".format(datetime.datetime.now().isoformat()))
     x_train = np.array(list(vocab_processor.transform(x_train)))
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
     y_train = np.argmax(y_train, axis=1)
@@ -86,10 +89,13 @@ except Exception as e:
     vocab_processor = data_loader.vocab_processor
 
 time_str = datetime.datetime.now().isoformat()
-print("{}: Finish doading data".format(time_str))
+print("{}: Finish loading data".format(time_str))
 print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 
+f_param = open(os.path.join("./", "", "param"), 'w')
+f_param.write(p_param)
+f_param.close()
 
 # Training
 # ==================================================
@@ -102,7 +108,7 @@ with tf.Graph().as_default():
 
     with sess.as_default():
         cnn = TextCNN(
-            batch_normalization=True,
+            batch_normalization=False,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],
             vocab_size=len(vocab_processor.vocabulary_),
@@ -165,7 +171,8 @@ with tf.Graph().as_default():
             """
             A single training step
             """
-            random_dropout = random.choice(FLAGS.dropout_keep_prob)
+            #random_dropout = random.choice(FLAGS.dropout_keep_prob)
+            random_dropout = FLAGS.dropout_keep_prob
             feed_dict = {
               cnn.input_x: x_batch,
               cnn.input_y: y_batch,
