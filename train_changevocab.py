@@ -44,7 +44,7 @@ tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after
 tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
-tf.flags.DEFINE_boolean("log_device_placement", True, "Log placement of ops on devices")
+tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 
 data_loader = MultiClassDataLoader(tf.flags, WordDataProcessor())
 data_loader.define_flags()
@@ -93,9 +93,6 @@ print("{}: Finish loading data".format(time_str))
 print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
 
-f_param = open(os.path.join("./", "", "param"), 'w')
-f_param.write(p_param)
-f_param.close()
 
 # Training
 # ==================================================
@@ -163,6 +160,11 @@ with tf.Graph().as_default():
 
         # Write vocabulary
         vocab_processor.save(os.path.join(out_dir, "vocab"))
+
+        # Write parameter
+        f_param = open(os.path.join(out_dir,"param"), 'w')
+        f_param.write('\n'.join(p_param))
+        f_param.close()
 
         # Initialize all variables
         sess.run(tf.global_variables_initializer())
