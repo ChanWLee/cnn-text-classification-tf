@@ -23,9 +23,11 @@ RUN cd && wget https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0
     tar zxfv mecab-ko-dic-2.0.3-20170922.tar.gz && cd mecab-ko-dic-2.0.3-20170922 && sudo ldconfig && ./configure && make && make install && cd .. && \
     rm -f *.tar.gz
 
+# for tagger error
 RUN cd && git clone https://bitbucket.org/eunjeon/mecab-python-0.996.git && \
     cd mecab-python-0.996 && \
     python3 setup.py build && \
-    python3 setup.py install
+    python3 setup.py install --prefix=/root/tf-cnn/env1 && \
+    export LANG=C.UTF-8
 
 
