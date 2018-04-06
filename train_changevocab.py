@@ -71,22 +71,28 @@ try:
     vocab_processor = data_loader.restore_vocab_processor(vocab_path)
 
     # using prev vocab
-    print("load train, dev data...{}".format(datetime.datetime.now().isoformat()))
-    x_train, y_train = data_loader.load_train_data_and_labels()
-    x_dev, y_dev = data_loader.load_dev_data_and_labels()
-    #vocab_processor = data_loader.restore_vocab_processor(vocab_path)
+    print("{}: load train, dev data...".format(datetime.datetime.now().isoformat()))
+    #x_train, y_train = data_loader.load_train_data_and_labels()
 
-    print("transform train, dev data by vocab...{}".format(datetime.datetime.now().isoformat()))
-    x_train = np.array(list(vocab_processor.transform(x_train)))
+    x_train = np.load(os.path.join('./', 'x_train.npy'))
+    y_train = np.load(os.path.join('./', 'y_train.npy'))
+
+    x_dev, y_dev = data_loader.load_dev_data_and_labels()
+
+    print("{}: transform train, dev data by vocab...".format(datetime.datetime.now().isoformat()))
+    x_train = np.array(x_train)
+    #x_train = np.array(list(vocab_processor.transform(x_train)))
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
-    #y_train = np.argmax(y_train, axis=1)
-    #y_dev = np.argmax(y_dev, axis=1)
 
 except Exception as e:
-    print("New vocab...")
+    print("{}\nNew vocab...".format(str(e)))
     # new vocab
     x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
     vocab_processor = data_loader.vocab_processor
+
+
+np.save(os.path.join('./','x_train'), x_train)
+np.save(os.path.join('./','y_train'), y_train)
 
 time_str = datetime.datetime.now().isoformat()
 print("{}: Finish loading data".format(time_str))
