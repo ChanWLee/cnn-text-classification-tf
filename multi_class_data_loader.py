@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import numpy as np
 import csv
 
@@ -111,26 +112,10 @@ class MultiClassDataLoader(object):
                 if data == '':
                     continue
                 x_text.append(data)
-                if False:
-                    slct = '{},{}'.format(row[0],row[1])
-                    y.append(class_vectors[slct])
-                    y_array = np.array(y)
-                    '''
-                    if text_col > 1:
-                        for col in row[0:(text_col-1)]:
-                            if slct is not None:
-                                slct = '{},{}'.format(slct, col)
-                            else:
-                                slct = '{}'.format(col)
-                        y.append(class_vectors[slct])
-                        y_array = np.array(y)
-                    '''
-                else:
-                    y.append(class_vectors[row[0]])
-                    y_array = np.array(y)
-                # y.append(class_vectors[row[1]])
-                # x_text= x_text+x_text
-                # y= y+y
+
+                slct = ','.join([col for col in row[0:text_col]])
+                y.append(class_vectors[slct])
+                y_array = np.array(y)
         return [x_text, y_array]
 
     def __classes(self):

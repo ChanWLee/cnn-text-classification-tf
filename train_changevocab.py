@@ -35,11 +35,11 @@ tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (d
 tf.flags.DEFINE_integer("num_filters", 192, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.4, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.1, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 128, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -79,8 +79,8 @@ try:
     print("transform train, dev data by vocab...{}".format(datetime.datetime.now().isoformat()))
     x_train = np.array(list(vocab_processor.transform(x_train)))
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
-    y_train = np.argmax(y_train, axis=1)
-    y_dev = np.argmax(y_dev, axis=1)
+    #y_train = np.argmax(y_train, axis=1)
+    #y_dev = np.argmax(y_dev, axis=1)
 
 except Exception as e:
     print("New vocab...")
@@ -134,6 +134,7 @@ with tf.Graph().as_default():
 
         # Output directory for models and summaries
         timestamp = str(int(time.time()))
+        #timestamp = '1522347132'
         out_dir = os.path.abspath(os.path.join(os.path.curdir, "runs", timestamp))
         print("Writing to {}\n".format(out_dir))
 
@@ -205,8 +206,8 @@ with tf.Graph().as_default():
                 feed_dict)
             time_str = datetime.datetime.now().isoformat()
             print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
-            # if writer:
-            #     writer.add_summary(summaries, step)
+            if writer:
+                 writer.add_summary(summaries, step)
 
         # Generate batches
         batches = data_helpers.batch_iter(

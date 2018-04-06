@@ -23,10 +23,4 @@ RUN cd tf-coriander && \
     cd && \
     python -c 'import tensorflow'
 
-# mecab
-RUN git clone https://bitbucket.org/eunjeon/mecab-python-0.996.git
-RUN cd mecab-python-0.996
-RUN python setup.py build
-RUN python setup.py install
-
 
