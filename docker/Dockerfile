@@ -28,6 +28,7 @@ RUN cd && git clone https://bitbucket.org/eunjeon/mecab-python-0.996.git && \
     cd mecab-python-0.996 && \
     python3 setup.py build && \
     python3 setup.py install --prefix=/root/tf-cnn/env1 && \
-    export LANG=C.UTF-8
-
+    echo 'export LC_ALL="C.UTF-8"' >> /etc/profile && \
+    echo 'export LANG="C.UTF-8"' >> /etc/profile && \
+    echo '. /etc/profile' >> ~/.bashrc
 
