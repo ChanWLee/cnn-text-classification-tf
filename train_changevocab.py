@@ -32,14 +32,14 @@ from word_data_processor import WordDataProcessor
 tf.flags.DEFINE_integer("embedding_dim", 64, "Dimensionality of character embedding (default: 128)")
 tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 # tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 192, "Number of filters per filter size (default: 128)")
+tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.4, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.1, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 128, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 200, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -64,18 +64,28 @@ print("")
 # Load data
 time_str = datetime.datetime.now().isoformat()
 print("{}\nLoading data...".format(time_str))
-vocab_path = os.path.join("./", "", "vocab")
+npy_t = FLAGS.train_data_file.split('/')[2]
+vocab_file = "{}_vocab".format(npy_t)
+vocab_path = os.path.join("./", "", vocab_file)
 
+
+#vocab - lexicon
 try:
     print("Load prev vocab...")
     vocab_processor = data_loader.restore_vocab_processor(vocab_path)
 
-    # using prev vocab
-    print("{}: load train, dev data...".format(datetime.datetime.now().isoformat()))
+except Exception as e:
+    print("failed load prev vocab\nNew vocab... & load train, dev data...")
+    x_train, y_train, x_dev, y_dev = data_loader.build_vocabulary()
+    vocab_processor = data_loader.vocab_processor
+
+# restore data - train, dev
+try:
+    print("{}: restore train, dev data...".format(datetime.datetime.now().isoformat()))
     #x_train, y_train = data_loader.load_train_data_and_labels()
 
-    x_train = np.load(os.path.join('./', 'x_train.npy'))
-    y_train = np.load(os.path.join('./', 'y_train.npy'))
+    x_train = np.load(os.path.join('./{}.npy'.format(npy_t)))
+    y_train = np.load(os.path.join('./{}_y.npy'.format(npy_t)))
 
     x_dev, y_dev = data_loader.load_dev_data_and_labels()
 
@@ -85,14 +95,15 @@ try:
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
 
 except Exception as e:
-    print("{}\nNew vocab...".format(str(e)))
+    print("{}: failed restore data\n New data - transform train, dev data...".format(datetime.datetime.now().isoformat()))
     # new vocab
-    x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
-    vocab_processor = data_loader.vocab_processor
+    #x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
+    #vocab_processor = data_loader.vocab_processor
+    x_train, x_dev = prepare_data_without_build_vocab(x_train, x_dev)
 
 
-np.save(os.path.join('./','x_train'), x_train)
-np.save(os.path.join('./','y_train'), y_train)
+np.save(os.path.join('./', npy_t), x_train)
+np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
 
 time_str = datetime.datetime.now().isoformat()
 print("{}: Finish loading data".format(time_str))
@@ -166,7 +177,7 @@ with tf.Graph().as_default():
         saver = tf.train.Saver(tf.global_variables())
 
         # Write vocabulary
-        vocab_processor.save(os.path.join(out_dir, "vocab"))
+        vocab_processor.save(os.path.join(out_dir, vocab_file))
 
         # Write parameter
         f_param = open(os.path.join(out_dir,"param"), 'w')

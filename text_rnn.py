@@ -17,7 +17,7 @@ class TextRNN(object):
         def lstm_cell():
             return rnn.BasicLSTMCell(hidden_dim, state_is_tuple=True)
 
-        multi_cells = rnn.MultiRNNCell([listm_cell() for _ in range(filter_sizes)], state_is_tuple=True)
+        multi_cells = rnn.MultiRNNCell([listm_cell() for _ in range(len(filter_sizes))], state_is_tuple=True)
 
         with tf.name_scope("output"):
             outputs, _states = tf.nn.dynamic_rnn(multi_cells, self.input_x, dtype=tf.int32)

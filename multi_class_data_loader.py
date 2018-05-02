@@ -26,20 +26,36 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("dev_data_file", "./data/kkk.dev", "Data source for the cross validation data.")
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
-        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_10_01_00", "Data source for the training data.")
-        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_10_01", "Data source for the training data.")
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train3_00", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_train", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_j_train", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_pos_joy_train", "Data source for the training data.")
 
-        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_00_01_500", "Data source for cross validation data.")
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_posi_nega_dev", "Data source for cross validation data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_posi_nega_dev", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_01_01", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_j_dev", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_pos_joy_dev", "Data source for cross validation data.")
-        
-        self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
+
+        self.__flags.DEFINE_string("class_data_file", "./twitter/classes_6.cls", "Data source for the class list.")
+        #self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
+
+
+    def build_vocabulary(self):
+        self.__resolve_params()
+        x_train, y_train = self.__load_data_and_labels(self.__train_data_file)
+        x_dev, y_dev = self.__load_data_and_labels(self.__dev_data_file)
+        self.vocab_processor = self.__data_processor.vocab_processor(x_train, x_dev)
+        return [x_train, y_train, x_dev, y_dev]
+
+
+    def prepare_data_without_build_vocab(self, x_train, x_dev):
+        x_train = np.array(list(self.vocab_processor.fit_transform(x_train)))
+        x_dev = np.array(list(self.vocab_processor.fit_transform(x_dev)))
+        return [x_train, x_dev]
+
 
     def prepare_data(self):
         self.__resolve_params()
