@@ -27,20 +27,21 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train", "Data source for the training data.")
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train3_00", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train3_00", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_train", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_j_train", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_pos_joy_train", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_dev", "Data source for the training data.")
 
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_dev", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_posi_nega_dev", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_01_01", "Data source for cross validation data.")
-        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test", "Data source for cross validation data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/test", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_j_dev", "Data source for cross validation data.")
         #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_pos_joy_dev", "Data source for cross validation data.")
 
-        self.__flags.DEFINE_string("class_data_file", "./twitter/classes_6.cls", "Data source for the class list.")
-        #self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
+        #self.__flags.DEFINE_string("class_data_file", "./twitter/classes_6.cls", "Data source for the class list.")
+        self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
 
 
     def build_vocabulary(self):

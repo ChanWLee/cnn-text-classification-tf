@@ -9,6 +9,7 @@ import time
 import datetime
 import data_helpers
 from text_cnn import TextCNN
+from text_rnn import TextRNN
 from multi_class_data_loader import MultiClassDataLoader
 from word_data_processor import WordDataProcessor
 
@@ -40,7 +41,7 @@ tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
 tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -75,7 +76,7 @@ try:
     vocab_processor = data_loader.restore_vocab_processor(vocab_path)
 
 except Exception as e:
-    print("failed load prev vocab\nNew vocab... & load train, dev data...")
+    print("...failed load prev vocab\nNew vocab... & load train, dev data...")
     x_train, y_train, x_dev, y_dev = data_loader.build_vocabulary()
     vocab_processor = data_loader.vocab_processor
 
@@ -95,11 +96,11 @@ try:
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
 
 except Exception as e:
-    print("{}: failed restore data\n New data - transform train, dev data...".format(datetime.datetime.now().isoformat()))
+    print("{}: ...failed restore data\n New data - transform train, dev data...".format(datetime.datetime.now().isoformat()))
     # new vocab
     #x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
     #vocab_processor = data_loader.vocab_processor
-    x_train, x_dev = prepare_data_without_build_vocab(x_train, x_dev)
+    x_train, x_dev = data_loader.prepare_data_without_build_vocab(x_train, x_dev)
 
 
 np.save(os.path.join('./', npy_t), x_train)
@@ -121,7 +122,8 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
 
     with sess.as_default():
-        cnn = TextCNN(
+        #cnn = TextCNN(
+        cnn = TextRNN(
             batch_normalization=False,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],
