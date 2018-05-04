@@ -14,7 +14,7 @@ class TextRNN(object):
         self.phase_train = tf.placeholder(tf.bool, name='phase_train')
 
         # x,y one_hot encoding
-        x_one_hot = tf.one_hot(self.input_x, num_classes)
+        x_one_hot = tf.one_hot(self.input_x, sequence_length)
 
         with tf.device('/cpu:0'), tf.name_scope("embedding"):
             W = tf.Variable(
@@ -27,34 +27,43 @@ class TextRNN(object):
             softmax_w = tf.get_variable("softmax_w", [hidden_dim, vocab_size])
             sotfmax_b = tf.get_variable("sotfmax_b", [vocab_size])
 
-        lstm = rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True)
         def lstm_cell():
-            return tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=self.dropout_keep_prob)
+            lstm = rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True)
+            return lstm
+            #return tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=self.dropout_keep_prob)
 
         multi_cells = rnn.MultiRNNCell([lstm_cell() for _ in range(len(filter_sizes))], state_is_tuple=True)
         #initial_state = multi_cells.zero_state(filter_sizes, tf.float32)
+        initial_state = multi_cells.zero_state(64, tf.float32)
 
         rnn_inputs = [tf.squeeze(i, axis=[1]) for i in tf.split(x_one_hot, sequence_length, 1)]
-
-        #outputs, _state = tf.contrib.rnn.static_rnn(multi_cells, rnn_inputs )
-        outputs, _state = tf.nn.dynamic_rnn(multi_cells, rnn_inputs, dtype=tf.float32)
+        outputs, _state = tf.contrib.rnn.static_rnn(multi_cells, rnn_inputs, initial_state=initial_state )
+        #outputs, _state = tf.nn.dynamic_rnn(multi_cells, rnn_inputs, dtype=tf.float32)
 
         seq_output = tf.concat(outputs, axis=1)
-        output = tf.reshape(seq_output, [-1, hidden_dim])
+        #output = tf.reshape(seq_output, [-1, hidden_dim])
+        output = seq_output
 
         with tf.variable_scope('softmax'):
             softmax_w = tf.Variable(tf.truncated_normal((hidden_dim, num_classes), stddev=0.1))
-            sotfmax_b = tf.Variable(tf.zeros(num_classes))
+            softmax_b = tf.Variable(tf.zeros(num_classes))
 
         with tf.name_scope("output"):
-            logits = tf.matmul(output, softmax_w) + softmax_b
-            self.predictions = tf.nn.softmax(logits, name='predictions')
+            W = tf.get_variable(
+                "W",
+                shape=[num_filters*sequence_length, num_classes],
+                initializer=tf.contrib.layers.xavier_initializer())
+            b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
+            preds = self.scores = tf.nn.xw_plus_b(output, W, b, name="scores")
+            #logits = tf.matmul(output, softmax_w) + softmax_b
+            #preds = tf.nn.softmax(logits)
+            self.predictions = tf.argmax(preds, 1, name="predictions")
 
 
         with tf.name_scope("loss"):
             y_reshaped = tf.reshape(self.input_y, [-1, num_classes])
-            losses = tf.nn.sotfmax_cross_entropy_with_logits_v2(logits=logits, labels=y_reshaped)
-            self.loss = tf.reduce_mean(loss)
+            losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
+            self.loss = tf.reduce_mean(losses)
 
         with tf.name_scope("accuracy"):
             correct_predictions = tf.equal(self.predictions, tf.argmax(self.input_y, 1))
