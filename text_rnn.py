@@ -10,6 +10,7 @@ class TextRNN(object):
 
         hidden_dim = num_filters
         batch_size = 64
+        time_step_size = vocab_size
         # Placeholders for input, output and dropout
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
@@ -18,15 +19,21 @@ class TextRNN(object):
 
 
         with tf.device('/cpu:0'), tf.name_scope("embedding"):
-
             W = tf.get_variable(
                 "W",
                 shape=[hidden_dim, num_classes],
                 initializer=tf.contrib.layers.xavier_initializer())
             b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
+
+            xt = tf.transpose(self.input_x, [1,0])
+            xr = tf.reshape(xt, [-1, hidden_dim])
+            x_split = tf.split(xr, time_step_size, 0)
+
             w = tf.get_variable("w",[hidden_dim, num_classes])
             self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+
+
 
         
         def lstm_cell():
@@ -38,18 +45,15 @@ class TextRNN(object):
         initial_state = multi_cells.zero_state(batch_size, tf.float32)
         
         rnn_inputs = [tf.squeeze(i, axis=[1]) for i in tf.split(self.embedded_chars, sequence_length, 1)]
-
-        def loop(prev, _):
-            prev = tf.matmul(prev, W) + b
-            prev_symbol = tf.stop_gradient(tf.argmax(prev, 1))
-            return tf.nn.embedding_lookup(W, prev_symbol)
+        #rnn_inputs = x_split
 
         #rnn_inputs = [i for i in tf.split(x_one_hot, sequence_length, 1)]
         #outputs, _state = tf.contrib.rnn.static_rnn(multi_cells, rnn_inputs, initial_state=initial_state )
+        outputs, _state = tf.contrib.rnn.static_rnn(multi_cells, rnn_inputs, dtype=tf.float32)
         #outputs, _state = tf.nn.dynamic_rnn(multi_cells, rnn_inputs, dtype=tf.float32)
-        outputs, _state = tf.contrib.legacy_seq2seq.rnn_decoder(rnn_inputs, initial_state, multi_cells
+        #outputs, _state = tf.contrib.legacy_seq2seq.rnn_decoder(rnn_inputs, initial_state, multi_cells
                 #,loop_function=loop
-                ,scope='rnnlm')
+        #        ,scope='rnnlm')
 
         seq_output = tf.concat(outputs, axis=1)
         #output = tf.reshape(seq_output, [-1, hidden_dim])
