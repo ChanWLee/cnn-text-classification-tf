@@ -30,18 +30,18 @@ from word_data_processor import WordDataProcessor
         - num_classes: 클래스 개수
         - vocab_size: 등장 단어 수
 """
-tf.flags.DEFINE_integer("embedding_dim", 64, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
+tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
 # tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.4, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.3, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("num_epochs", 22, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -67,6 +67,7 @@ time_str = datetime.datetime.now().isoformat()
 print("{}\nLoading data...".format(time_str))
 npy_t = FLAGS.train_data_file.split('/')[2]
 vocab_file = "{}_vocab".format(npy_t)
+#vocab_file = 'vocab'
 vocab_path = os.path.join("./", "", vocab_file)
 
 
@@ -91,7 +92,25 @@ try:
     x_dev, y_dev = data_loader.load_dev_data_and_labels()
 
     print("{}: transform train, dev data by vocab...".format(datetime.datetime.now().isoformat()))
-    x_train = np.array(x_train)
+    if False:
+        x_train = np.load(os.path.join('./raw_6_train1_00.npy'))
+        y_train = np.load(os.path.join('./raw_6_train1_00_y.npy'))
+        x_1= np.array(x_train)
+        y_1= np.array(y_train)
+
+        x_train = np.load(os.path.join('./raw_6_train1_01.npy'))
+        y_train = np.load(os.path.join('./raw_6_train1_01_y.npy'))
+        x_2= np.array(x_train)
+        y_2= np.array(y_train)
+
+        x_train = np.concatenate((x_1, x_2), axis=0)
+        y_train = np.concatenate((y_1, y_2), axis=0)
+
+        x_dev, y_dev = data_loader.load_dev_data_and_labels()
+
+    else:
+        x_train = np.array(x_train)
+
     #x_train = np.array(list(vocab_processor.transform(x_train)))
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
 
@@ -122,8 +141,8 @@ with tf.Graph().as_default():
     sess = tf.Session(config=session_conf)
 
     with sess.as_default():
-        #cnn = TextCNN(
-        cnn = TextRNN(
+        cnn = TextCNN(
+        #cnn = TextRNN(
             batch_normalization=False,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],

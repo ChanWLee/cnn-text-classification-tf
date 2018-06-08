@@ -14,9 +14,8 @@ class WordDataProcessor(object):
             if max_doc_len > max_document_length:
                 max_document_length = max_doc_len
         return learn.preprocessing.VocabularyProcessor(
-            min_frequency=min_frequency
-            ,max_document_length=max_document_length
-                                                       )
+              min_frequency=min_frequency
+            , max_document_length=max_document_length)
 
     def restore_vocab_processor(_, vocab_path):
         return learn.preprocessing.VocabularyProcessor.restore(vocab_path)
