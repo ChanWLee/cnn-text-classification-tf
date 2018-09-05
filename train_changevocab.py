@@ -30,19 +30,19 @@ from word_data_processor import WordDataProcessor
         - num_classes: 클래스 개수
         - vocab_size: 등장 단어 수
 """
-tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
-# tf.flags.DEFINE_string("filter_sizes", "3,4,5", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_integer("embedding_dim", 256, "Dimensionality of character embedding (default: 128)")
+#tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_string("filter_sizes", "2,3,4,5,6,7,8,9,10,11,12,13", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.3, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.6, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 22, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 1000, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("batch_size", 128, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -199,6 +199,7 @@ with tf.Graph().as_default():
 
         # Write vocabulary
         vocab_processor.save(os.path.join(out_dir, vocab_file))
+        vocab_processor.save(os.path.join("./", vocab_file))
 
         # Write parameter
         f_param = open(os.path.join(out_dir,"param"), 'w')

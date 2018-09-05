@@ -18,9 +18,11 @@ RUN cd && mkdir tf-cnn && \
     pip3 install --upgrade jpype1
 
 RUN cd && wget https://bitbucket.org/eunjeon/mecab-ko/downloads/mecab-0.996-ko-0.9.2.tar.gz && \
-    wget https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.0.3-20170922.tar.gz && \
+#    wget https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.0.3-20170922.tar.gz && \
+    wget https://bitbucket.org/eunjeon/mecab-ko-dic/downloads/mecab-ko-dic-2.1.1-20180720.tar.gz && \
     tar zxfv mecab-0.996-ko-0.9.2.tar.gz && cd mecab-0.996-ko-0.9.2 && ./configure && make && make install && cd .. && \
-    tar zxfv mecab-ko-dic-2.0.3-20170922.tar.gz && cd mecab-ko-dic-2.0.3-20170922 && sudo ldconfig && ./configure && make && make install && cd .. && \
+#    tar zxfv mecab-ko-dic-2.0.3-20170922.tar.gz && cd mecab-ko-dic-2.0.3-20170922 && sudo ldconfig && ./configure && make && make install && cd .. && \
+    tar zxfv mecab-ko-dic-2.1.1-20180720.tar.gz && cd mecab-ko-dic-2.1.1-20180720 && sudo ldconfig && ./configure && make && make install && cd .. && \
     rm -f *.tar.gz
 
 # for tagger error
