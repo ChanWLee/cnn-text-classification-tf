@@ -26,11 +26,41 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("dev_data_file", "./data/kkk.dev", "Data source for the cross validation data.")
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_sentiment_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train1_00", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_train3", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/edit_6_non0_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_pn_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_j_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_sad_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_a_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_d_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_f_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_s_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_pos_joy_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_posi_nega_dev", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_0or1_train", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_0or1_train30", "Data source for the training data.")
 
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_posi_nega_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_10_01_01", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/test", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_j_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_sad_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_a_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_d_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_f_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_s_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_pos_joy_dev", "Data source for cross validation data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_0or1_dev", "Data source for cross validation data.")
+        #self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_0or1_dev30", "Data source for cross validation data.")
 
-        self.__flags.DEFINE_string("class_data_file", "./twitter/sentiment.cls", "Data source for the class list.")
+        #self.__flags.DEFINE_string("class_data_file", "./twitter/classes_6.cls", "Data source for the class list.")
+        #self.__flags.DEFINE_string("class_data_file", "./twitter/class.cls", "Data source for the class list.")
+        #self.__flags.DEFINE_string("class_data_file", "./twitter/u_class.cls", "Data source for the class list.")
+        self.__flags.DEFINE_string("class_data_file", "./twitter/classes_6_0or1.cls", "Data source for the class list.")
 
 
     def build_vocabulary(self):
@@ -101,7 +131,7 @@ class MultiClassDataLoader(object):
     def __load_data_and_labels(self, data_file):
         x_text = []
         y = []
-        with open(data_file, 'r', encoding='utf-8') as tsvin:
+        with open(data_file, 'r') as tsvin:
             classes = self.__classes()
             one_hot_vectors = np.eye(len(classes), dtype=int)
             class_vectors = {}

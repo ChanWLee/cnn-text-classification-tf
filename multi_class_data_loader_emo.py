@@ -26,11 +26,11 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("dev_data_file", "./data/kkk.dev", "Data source for the cross validation data.")
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_sentiment_train", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_6_0or1_train", "Data source for the training data.")
 
-        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_test_dev", "Data source for cross validation data.")
+        self.__flags.DEFINE_string("dev_data_file", "./twitter/raw_6_0or1_dev__01", "Data source for cross validation data.")
 
-        self.__flags.DEFINE_string("class_data_file", "./twitter/sentiment.cls", "Data source for the class list.")
+        self.__flags.DEFINE_string("class_data_file", "./twitter/emotion.cls", "Data source for the class list.")
 
 
     def build_vocabulary(self):
@@ -101,7 +101,7 @@ class MultiClassDataLoader(object):
     def __load_data_and_labels(self, data_file):
         x_text = []
         y = []
-        with open(data_file, 'r', encoding='utf-8') as tsvin:
+        with open(data_file, 'r') as tsvin:
             classes = self.__classes()
             one_hot_vectors = np.eye(len(classes), dtype=int)
             class_vectors = {}

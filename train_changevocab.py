@@ -30,17 +30,17 @@ from word_data_processor import WordDataProcessor
         - num_classes: 클래스 개수
         - vocab_size: 등장 단어 수
 """
-tf.flags.DEFINE_integer("embedding_dim", 256, "Dimensionality of character embedding (default: 128)")
-#tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_string("filter_sizes", "2,3,4,5,6,7,8,9,10,11,12,13", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
+tf.flags.DEFINE_integer("embedding_dim", 128, "Dimensionality of character embedding (default: 128)")
+tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
+#tf.flags.DEFINE_string("filter_sizes", "2,3,4,5,6,7,8,9,10,11,12,13", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_integer("num_filters", 500, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.6, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 128, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 5, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 400, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 400, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 100)")
 # Misc Parameters
@@ -85,7 +85,7 @@ except Exception as e:
 try:
     print("{}: restore train, dev data...".format(datetime.datetime.now().isoformat()))
     #x_train, y_train = data_loader.load_train_data_and_labels()
-
+    print("file: {}".format(npy_t))
     x_train = np.load(os.path.join('./{}.npy'.format(npy_t)))
     y_train = np.load(os.path.join('./{}_y.npy'.format(npy_t)))
 
@@ -154,9 +154,15 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        optimizer = tf.train.AdamOptimizer(1e-3)#default
+        #optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
+        #optimizer = tf.train.AdamOptimizer(learning_rate=1e-3, beta1=0.9, beta2=0.999)# 0.001
+        #optimizer = tf.train.AdamOptimizer(5e-4)# 0.0005
+        #optimizer = tf.train.AdamOptimizer(2e-4)# 0.0002
+        #optimizer = tf.train.AdamOptimizer(1e-4)# 0.0001
+        optimizer = tf.train.AdamOptimizer(2e-5)# 0.00002
         #optimizer = tf.train.RMSPropOptimizer(1e-3, 0.9)
-        # optimizer = tf.train.AdamOptimizer(3e-2)
+        #optimizer = tf.train.AdamOptimizer(2e-2)# 0.02
+        #optimizer = tf.contrib.opt.NadamOptimizer(5e-4)
         grads_and_vars = optimizer.compute_gradients(cnn.loss)
         train_op = optimizer.apply_gradients(grads_and_vars, global_step=global_step)
 

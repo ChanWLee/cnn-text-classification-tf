@@ -56,7 +56,10 @@ class TextCNN(object):
                 if batch_normalization:
                     conv = self.batch_norm(conv, num_filters, self.phase_train)
                 # Apply nonlinearity
-                h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+                #h = tf.nn.leaky_relu(tf.nn.bias_add(conv, b), alpha=0.01, name="leaky_relu")
+                h = tf.nn.elu(tf.nn.bias_add(conv, b), name="elu")
+                #h = tf.nn.swish(tf.nn.bias_add(conv, b), name="swish")
+                #h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
                 pooled = tf.nn.max_pool(
                     h,
