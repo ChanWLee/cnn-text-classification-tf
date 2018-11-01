@@ -40,9 +40,9 @@ tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 400, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 400, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
-tf.flags.DEFINE_integer("checkpoint_every", 200, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_integer("num_epochs", 1000, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("evaluate_every", 10, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("checkpoint_every", 20, "Save model after this many steps (default: 100)")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -143,7 +143,7 @@ with tf.Graph().as_default():
     with sess.as_default():
         cnn = TextCNN(
         #cnn = TextRNN(
-            batch_normalization=False,
+            batch_normalization=True,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],
             vocab_size=len(vocab_processor.vocabulary_),
@@ -154,12 +154,12 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        #optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
+        optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
         #optimizer = tf.train.AdamOptimizer(learning_rate=1e-3, beta1=0.9, beta2=0.999)# 0.001
         #optimizer = tf.train.AdamOptimizer(5e-4)# 0.0005
         #optimizer = tf.train.AdamOptimizer(2e-4)# 0.0002
         #optimizer = tf.train.AdamOptimizer(1e-4)# 0.0001
-        optimizer = tf.train.AdamOptimizer(2e-5)# 0.00002
+        #optimizer = tf.train.AdamOptimizer(2e-5)# 0.00002
         #optimizer = tf.train.RMSPropOptimizer(1e-3, 0.9)
         #optimizer = tf.train.AdamOptimizer(2e-2)# 0.02
         #optimizer = tf.contrib.opt.NadamOptimizer(5e-4)
@@ -236,6 +236,7 @@ with tf.Graph().as_default():
             if step % (FLAGS.evaluate_every/5) == 0:
                 train_summary_writer.add_summary(summaries, step)
 
+        save_loss = 10.0
         def dev_step(x_batch, y_batch, writer=None):
             """
             Evaluates model on a dev set
@@ -253,11 +254,22 @@ with tf.Graph().as_default():
             print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss, accuracy))
             if writer:
                  writer.add_summary(summaries, step)
+            global save_loss
+
+            lower_then_prev_loss = False
+            if save_loss > loss-0.01:
+                # save prev loss
+                save_loss = loss
+                lower_then_prev_loss = True
+            return lower_then_prev_loss
 
         # Generate batches
         batches = data_helpers.batch_iter(
             list(zip(x_train, y_train)), FLAGS.batch_size, FLAGS.num_epochs)
         # Training loop. For each batch...
+        save_step = 0
+        check_loss = True
+        pivot = 2000
         for batch in batches:
             try:
                 x_batch, y_batch = zip(*batch)
@@ -267,9 +279,15 @@ with tf.Graph().as_default():
             current_step = tf.train.global_step(sess, global_step)
             if current_step % FLAGS.evaluate_every == 0:
                 print("\nEvaluation:")
-                dev_step(x_dev, y_dev, writer=dev_summary_writer)
+                check_loss = dev_step(x_dev, y_dev, writer=dev_summary_writer)
                 # print("")
             if current_step % FLAGS.checkpoint_every == 0:
-                path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                if check_loss: # 이전보다 loss가 작을 때만 저장
+                    path = saver.save(sess, checkpoint_prefix, global_step=current_step)
+                    save_step = current_step
+                print('cur_step:{},  sav_step:{}, chkp:{}'.format(current_step, save_step, FLAGS.checkpoint_every))
+                # pivot 까지는 무조건 진행하고, 이후 부터는 checkpoint의 10배 될때까지 작은 loss가 없으면 break
+                if current_step > pivot and current_step - save_step > FLAGS.checkpoint_every*100:
+                    break
                 # print("Saved model checkpoint to {}\n".format(path))
         # serving()
