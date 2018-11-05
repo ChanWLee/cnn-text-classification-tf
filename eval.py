@@ -15,8 +15,8 @@ import csv
 
 # Eval Parameters
 tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
-tf.flags.DEFINE_string("checkpoint_dir", "./runs/fear/checkpoints/", "")
-# tf.flags.DEFINE_string("checkpoint_dir", "./runs/1516266004/checkpoints/", "")
+tf.flags.DEFINE_string("checkpoint_dir", "./runs/new_sen/raw20/checkpoints/", "")
+# tf.flags.DEFINE_string("checkpoint_dir", "./runs/new_emo_raw1/checkpoints/", "")
 #tf.flags.DEFINE_string("checkpoint_dir", "./runs/test/1516595479/checkpoints/", "")
 #tf.flags.DEFINE_string("checkpoint_dir", "", "Checkpoint directory from training run")
 tf.flags.DEFINE_boolean("eval_train", False, "Evaluate on all training data")
@@ -77,16 +77,20 @@ with graph.as_default():
 
         # Tensors we want to evaluate
         predictions = graph.get_operation_by_name("output/predictions").outputs[0]
+        scores = graph.get_operation_by_name("output/scores").outputs[0]
+        # scores = tf.nn.softmax(scores)
 
         # Generate batches for one epoch
         batches = data_helpers.batch_iter(list(x_test), FLAGS.batch_size, 1, shuffle=False)
 
         # Collect the predictions here
         all_predictions = []
+        all_scores = []
 
         for x_test_batch in batches:
-            batch_predictions = sess.run(predictions, {input_x: x_test_batch, dropout_keep_prob: 1.0, phase_train: False})
+            batch_predictions, batch_scores = sess.run([predictions, scores], {input_x: x_test_batch, dropout_keep_prob: 1.0, phase_train: False})
             all_predictions = np.concatenate([all_predictions, batch_predictions])
+            all_scores.extend(batch_scores)
 
 # Print accuracy if y_test is defined
 if y_test is not None:
@@ -96,7 +100,7 @@ if y_test is not None:
 
 # Save the evaluation to a csv
 class_predictions = data_loader.class_labels(all_predictions.astype(int))
-predictions_human_readable = np.column_stack((class_predictions, np.array(x_raw)))
+predictions_human_readable = np.column_stack((class_predictions, all_scores, np.array(x_raw)))
 out_path = os.path.join(FLAGS.checkpoint_dir, "../", "prediction.csv")
 print("Saving evaluation to {0}".format(out_path))
 with open(out_path, 'w') as f:
