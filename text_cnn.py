@@ -31,8 +31,8 @@ class TextCNN(object):
         l2_loss = tf.constant(0.0)
 
         # Embedding layer
+        #with tf.device('/cpu:0'), tf.name_scope("embedding"):
         with tf.device('/gpu:0'), tf.name_scope("embedding"):
-            # with tf.device('/gpu:0'), tf.name_scope("embedding"):
             W = tf.Variable(
                 tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
                 name="W")
@@ -88,13 +88,13 @@ class TextCNN(object):
             b = tf.Variable(tf.constant(0.1, shape=[num_classes]), name="b")
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)
-            self.scores = tf.nn.xw_plus_b(self.h_drop, W, b, name="scores")
-            self.predictions = tf.argmax(self.scores, 1, name="predictions")
-            self.scores = tf.nn.softmax(self.scores) # eval에서  퍼센트로 나타내기 위해서 softmax
+            self.score_s = tf.nn.xw_plus_b(self.h_drop, W, b)
+            self.scores = tf.nn.softmax(self.score_s, name="scores")
+            self.predictions = tf.argmax(self.score_s, 1, name="predictions")
 
         # CalculateMean cross-entropy loss
         with tf.name_scope("loss"):
-            losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
+            losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.score_s, labels=self.input_y)
             self.loss = tf.reduce_mean(losses) + l2_reg_lambda * l2_loss
 
         # Accuracy
