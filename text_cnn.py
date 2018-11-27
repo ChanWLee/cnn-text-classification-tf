@@ -21,6 +21,8 @@ class TextCNN(object):
             self, batch_normalization, sequence_length, num_classes, vocab_size,
             embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
 
+        chans_model = True
+
         # Placeholders for input, output and dropout
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
@@ -47,12 +49,20 @@ class TextCNN(object):
                 filter_shape = [filter_size, embedding_size, 1, num_filters]
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
-                conv = tf.nn.conv2d(
-                    self.embedded_chars_expanded,
-                    W,
-                    strides=[1, 1, 1, 1],
-                    padding="VALID",
-                    name="conv")
+                if chans_model:
+                    conv = tf.nn.conv2d(
+                        self.embedded_chars_expanded,
+                        W,
+                        strides=[1, 1, 1, 1],
+                        padding="SAME",
+                        name="conv")
+                else:
+                    conv = tf.nn.conv2d(
+                        self.embedded_chars_expanded,
+                        W,
+                        strides=[1, 1, 1, 1],
+                        padding="VALID",
+                        name="conv")
                 if batch_normalization:
                     conv = self.batch_norm(conv, num_filters, self.phase_train)
                 # Apply nonlinearity
@@ -61,12 +71,46 @@ class TextCNN(object):
                 #h = tf.nn.swish(tf.nn.bias_add(conv, b), name="swish")
                 #h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
-                pooled = tf.nn.max_pool(
-                    h,
-                    ksize=[1, sequence_length - filter_size + 1, 1, 1],
-                    strides=[1, 1, 1, 1],
-                    padding='VALID',
-                    name="pool")
+                if chans_model:
+                    pooled = tf.nn.max_pool(
+                        h,
+                        ksize=[1, 1, 1, 1],
+                        strides=[1, 1, 1, 1],
+                        padding='VALID',
+                        name="pool1")
+                    nf2 = num_filters
+                    filter_shape1 = [filter_size, embedding_size, num_filters, nf2]
+                    W1 = tf.Variable(tf.truncated_normal(filter_shape1, stddev=0.1), name="W1")
+                    b1 = tf.Variable(tf.constant(0.1, shape=[nf2]), name="b1")
+                    num_filters = nf2
+                    conv1 = tf.nn.conv2d(
+                        pooled,
+                        W1,
+                        strides=[1, 1, 1, 1],
+                        padding="VALID",
+                        name="conv1")
+                    h1 = tf.nn.elu(tf.nn.bias_add(conv1, b1), name="elu")
+                    pooled = tf.nn.max_pool(
+                        h1,
+                        ksize=[1, sequence_length - filter_size + 1, 1, 1],
+                        strides=[1, 1, 1, 1],
+                        padding='VALID',
+                        name="pool1")
+                    for i in range(0, 3):
+                        pooled = tf.nn.conv2d(
+                            pooled,
+                            W1,
+                            strides=[1, 1, 1, 1],
+                            padding='SAME',
+                            name="pool{}".format(i))
+                        pooled = tf.nn.elu(tf.nn.bias_add(pooled, b1), name="elu{}".format(i))
+                else:
+                    pooled = tf.nn.max_pool(
+                        h,
+                        ksize=[1, sequence_length - filter_size + 1, 1, 1],
+                        strides=[1, 1, 1, 1],
+                        padding='VALID',
+                        name="pool")
                 pooled_outputs.append(pooled)
 
         # Combine all the pooled features
@@ -89,6 +133,13 @@ class TextCNN(object):
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)
             self.score_s = tf.nn.xw_plus_b(self.h_drop, W, b)
+            if chans_model:
+                aaa = tf.nn.dropout(self.score_s, self.dropout_keep_prob)
+                W2 = tf.get_variable(
+                    "W2",
+                    shape=[num_classes, num_classes],
+                    initializer=tf.contrib.layers.xavier_initializer())
+                self.score_s = tf.nn.xw_plus_b(aaa, W2, b)
             self.scores = tf.nn.softmax(self.score_s, name="scores")
             self.predictions = tf.argmax(self.score_s, 1, name="predictions")
 
