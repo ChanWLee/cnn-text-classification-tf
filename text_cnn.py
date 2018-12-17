@@ -18,10 +18,10 @@ class TextCNN(object):
     """
 
     def __init__(
-            self, batch_normalization, sequence_length, num_classes, vocab_size,
+            self, batch_normalization, activation_function, sequence_length, num_classes, vocab_size,
             embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
 
-        chans_model = True
+        chans_model = False
 
         # Placeholders for input, output and dropout
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
@@ -37,7 +37,7 @@ class TextCNN(object):
         with tf.device('/gpu:0'), tf.name_scope("embedding"):
             W = tf.Variable(
                 tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
-                name="W")
+                name="W_embed")
             self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
@@ -53,7 +53,7 @@ class TextCNN(object):
                     conv = tf.nn.conv2d(
                         self.embedded_chars_expanded,
                         W,
-                        strides=[1, 1, 1, 1],
+                        strides=[1, 2, 2, 1],
                         padding="SAME",
                         name="conv")
                 else:
@@ -65,21 +65,30 @@ class TextCNN(object):
                         name="conv")
                 if batch_normalization:
                     conv = self.batch_norm(conv, num_filters, self.phase_train)
+                    #conv = tf.nn.local_response_normalization(conv, num_filters, self.phase_train)
                 # Apply nonlinearity
-                #h = tf.nn.leaky_relu(tf.nn.bias_add(conv, b), alpha=0.01, name="leaky_relu")
-                h = tf.nn.elu(tf.nn.bias_add(conv, b), name="elu")
-                #h = tf.nn.swish(tf.nn.bias_add(conv, b), name="swish")
-                #h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+                if activation_function == 'leaky_relu':
+                    h = tf.nn.leaky_relu(tf.nn.bias_add(conv, b), alpha=0.01, name="leaky_relu")
+                elif activation_function == 'elu':
+                    h = tf.nn.elu(tf.nn.bias_add(conv, b), name="elu")
+                elif activation_function == 'swish':
+                    h = tf.nn.swish(tf.nn.bias_add(conv, b), name="swish")
+                elif activation_function == 'relu':
+                    h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+                else:
+                    h = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
                 # Maxpooling over the outputs
                 if chans_model:
                     pooled = tf.nn.max_pool(
                         h,
                         ksize=[1, 1, 1, 1],
-                        strides=[1, 1, 1, 1],
-                        padding='VALID',
+                        strides=[1, 2, 2, 1],
+                        padding='SAME',
                         name="pool1")
+                   
                     nf2 = num_filters
-                    filter_shape1 = [filter_size, embedding_size, num_filters, nf2]
+                    aaa = int(round(embedding_size /4,0))
+                    filter_shape1 = [filter_size, aaa , num_filters, nf2]
                     W1 = tf.Variable(tf.truncated_normal(filter_shape1, stddev=0.1), name="W1")
                     b1 = tf.Variable(tf.constant(0.1, shape=[nf2]), name="b1")
                     num_filters = nf2
@@ -89,20 +98,24 @@ class TextCNN(object):
                         strides=[1, 1, 1, 1],
                         padding="VALID",
                         name="conv1")
+                    conv1 = self.batch_norm(conv1, num_filters, self.phase_train)
                     h1 = tf.nn.elu(tf.nn.bias_add(conv1, b1), name="elu")
+                    
                     pooled = tf.nn.max_pool(
                         h1,
                         ksize=[1, sequence_length - filter_size + 1, 1, 1],
                         strides=[1, 1, 1, 1],
                         padding='VALID',
-                        name="pool1")
+                        name="pool2")
+                    
                     for i in range(0, 3):
                         pooled = tf.nn.conv2d(
                             pooled,
                             W1,
                             strides=[1, 1, 1, 1],
                             padding='SAME',
-                            name="pool{}".format(i))
+                            name="pool3_{}".format(i))
+                        pooled = self.batch_norm(pooled, num_filters, self.phase_train)
                         pooled = tf.nn.elu(tf.nn.bias_add(pooled, b1), name="elu{}".format(i))
                 else:
                     pooled = tf.nn.max_pool(
@@ -111,6 +124,7 @@ class TextCNN(object):
                         strides=[1, 1, 1, 1],
                         padding='VALID',
                         name="pool")
+
                 pooled_outputs.append(pooled)
 
         # Combine all the pooled features
@@ -121,6 +135,7 @@ class TextCNN(object):
         # Add dropout
         with tf.name_scope("dropout"):
             self.h_drop = tf.nn.dropout(self.h_pool_flat, self.dropout_keep_prob)
+            #self.h_drop = tf.nn.dropout(self.h_drop, self.dropout_keep_prob)
 
         # Final (unnormalized) scores and predictions
         with tf.name_scope("output"):
@@ -133,6 +148,7 @@ class TextCNN(object):
             l2_loss += tf.nn.l2_loss(W)
             l2_loss += tf.nn.l2_loss(b)
             self.score_s = tf.nn.xw_plus_b(self.h_drop, W, b)
+
             if chans_model:
                 aaa = tf.nn.dropout(self.score_s, self.dropout_keep_prob)
                 W2 = tf.get_variable(
@@ -140,6 +156,7 @@ class TextCNN(object):
                     shape=[num_classes, num_classes],
                     initializer=tf.contrib.layers.xavier_initializer())
                 self.score_s = tf.nn.xw_plus_b(aaa, W2, b)
+
             self.scores = tf.nn.softmax(self.score_s, name="scores")
             self.predictions = tf.argmax(self.score_s, 1, name="predictions")
 

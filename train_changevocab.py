@@ -31,18 +31,20 @@ from word_data_processor import WordDataProcessor
         - vocab_size: 등장 단어 수
 """
 tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3,4", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_string("filter_sizes", "3", "Comma-separated filter sizes (default: '3,4,5')")
 #tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 50, "Number of filters per filter size (default: 128)")
+tf.flags.DEFINE_integer("num_filters", 300, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.6, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 60, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("batch_size", 500, "Batch Size (default: 64)")
 tf.flags.DEFINE_integer("num_epochs", 100, "Number of training epochs (default: 200)")
-tf.flags.DEFINE_integer("evaluate_every", 50, "Evaluate model on dev set after this many steps (default: 100)")
+tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
+tf.flags.DEFINE_string("activation_function", "elu", "select activation_function (default: 'relu'), leaky_relu, elu, swish")
+tf.flags.DEFINE_boolean("batch_normalization", True, "Do batch normalization")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
@@ -81,7 +83,8 @@ except Exception as e:
     x_train, y_train, x_dev, y_dev = data_loader.build_vocabulary()
     vocab_processor = data_loader.vocab_processor
 
-# restore data - train, dev
+
+# restore data from npy or load data from file - train, dev
 try:
     print("{}\n restore train, dev data...".format(datetime.datetime.now().isoformat()))
     #x_train, y_train = data_loader.load_train_data_and_labels()
@@ -92,44 +95,32 @@ try:
     x_dev, y_dev = data_loader.load_dev_data_and_labels()
 
     print("{}\n transform train, dev data by vocab...".format(datetime.datetime.now().isoformat()))
-    if False:
-        x_train = np.load(os.path.join('./raw_6_train1_00.npy'))
-        y_train = np.load(os.path.join('./raw_6_train1_00_y.npy'))
-        x_1= np.array(x_train)
-        y_1= np.array(y_train)
-
-        x_train = np.load(os.path.join('./raw_6_train1_01.npy'))
-        y_train = np.load(os.path.join('./raw_6_train1_01_y.npy'))
-        x_2= np.array(x_train)
-        y_2= np.array(y_train)
-
-        x_train = np.concatenate((x_1, x_2), axis=0)
-        y_train = np.concatenate((y_1, y_2), axis=0)
-
-        x_dev, y_dev = data_loader.load_dev_data_and_labels()
-
-    else:
-        x_train = np.array(x_train)
-
+    x_train = np.array(x_train)
     #x_train = np.array(list(vocab_processor.transform(x_train)))
     x_dev = np.array(list(vocab_processor.transform(x_dev)))
 
+    #save vocab in project root
+    vocab_processor.save(os.path.join("./", vocab_file))
+    print('save vocab')
 except Exception as e:
     print("{}\n ...failed restore data\n New data - transform train, dev data...".format(datetime.datetime.now().isoformat()))
-    # new vocab
-    x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
-    #vocab_processor = data_loader.vocab_processor
+    try:
+        x_train
+    except NameError:
+        x_train, y_train, x_dev, y_dev = data_loader.prepare_data()
     x_train, x_dev = data_loader.prepare_data_without_build_vocab(x_train, x_dev)
 
+    #save vocab in project root
+    vocab_processor.save(os.path.join("./", vocab_file))
+    print('save vocab')
+    np.save(os.path.join('./', npy_t), x_train)
+    np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
 
-np.save(os.path.join('./', npy_t), x_train)
-np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
 
 time_str = datetime.datetime.now().isoformat()
 print("{}: Finish loading data".format(time_str))
 print("Vocabulary Size: {:d}".format(len(vocab_processor.vocabulary_)))
 print("Train/Dev split: {:d}/{:d}".format(len(y_train), len(y_dev)))
-
 
 # Training
 # ==================================================
@@ -143,7 +134,8 @@ with tf.Graph().as_default():
     with sess.as_default():
         cnn = TextCNN(
         #cnn = TextRNN(
-            batch_normalization=False,
+            batch_normalization=FLAGS.batch_normalization,
+            activation_function=FLAGS.activation_function,
             sequence_length=x_train.shape[1],
             num_classes=y_train.shape[1],
             vocab_size=len(vocab_processor.vocabulary_),
@@ -154,7 +146,7 @@ with tf.Graph().as_default():
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
-        #optimizer = tf.train.AdamOptimizer(2e-2)# 0.02
+        #optimizer = tf.train.AdamOptimizer(1e-2)# 0.01
         optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
         #optimizer = tf.train.AdamOptimizer(learning_rate=1e-3, beta1=0.9, beta2=0.999)# 0.001
         #optimizer = tf.train.AdamOptimizer(5e-4)# 0.0005
@@ -205,7 +197,6 @@ with tf.Graph().as_default():
 
         # Write vocabulary
         vocab_processor.save(os.path.join(out_dir, vocab_file))
-        vocab_processor.save(os.path.join("./", vocab_file))
 
         # Write parameter
         f_param = open(os.path.join(out_dir,"param"), 'w')
@@ -259,12 +250,11 @@ with tf.Graph().as_default():
             global save_accu
 
             lower_then_prev_loss = False
-            if save_loss >= loss-0.005:
+            if save_loss > loss-0.002:
                 save_loss = loss
                 save_accu = accuracy
                 lower_then_prev_loss = True
-            if not lower_then_prev_loss and save_accu <= accuracy:
-                save_loss = loss
+            if not lower_then_prev_loss and save_accu < accuracy:
                 save_accu = accuracy
                 lower_then_prev_loss = True
             return lower_then_prev_loss
@@ -275,7 +265,7 @@ with tf.Graph().as_default():
         # Training loop. For each batch...
         save_step = 0
         check_loss = True
-        pivot = 5000
+        pivot = 10000
         gap = FLAGS.checkpoint_every * 10
         for batch in batches:
             try:
