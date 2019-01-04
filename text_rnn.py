@@ -48,7 +48,8 @@ class TextRNN(object):
 
 
         def cell():
-            lstm = rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True)
+            #lstm = rnn.BasicLSTMCell(num_units=hidden_dim, state_is_tuple=True)
+            lstm = rnn.GRUCell(num_units=hidden_dim, state_is_tuple=True)
             #return lstm
             return tf.contrib.rnn.DropoutWrapper(lstm, output_keep_prob=self.dropout_keep_prob)
 
@@ -111,6 +112,7 @@ class TextRNN(object):
 
         with tf.name_scope("loss"):
             losses = tf.nn.softmax_cross_entropy_with_logits_v2(logits=self.scores, labels=self.input_y)
+            #losses = tf.nn.sampled_softmax_loss(logits=self.scores, labels=self.input_y)
             self.loss = tf.reduce_mean(losses) + l2_loss
 
         with tf.name_scope("accuracy"):
