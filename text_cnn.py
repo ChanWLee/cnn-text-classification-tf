@@ -27,6 +27,7 @@ class TextCNN(object):
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
+        #self.prev_dropout_keep_prob = tf.placeholder(tf.float32, name="prev_dropout_keep_prob")
         self.phase_train = tf.placeholder(tf.bool, name='phase_train')
 
         # Keeping track of l2 regularization loss (optional)
@@ -41,11 +42,14 @@ class TextCNN(object):
             self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
             self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
+        with tf.name_scope("input_dropout"):
+            self.embedded_chars_expanded = tf.nn.dropout(self.embedded_chars_expanded , self.dropout_keep_prob)
         # Create a convolution + maxpool layer for each filter size
         pooled_outputs = []
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope("conv-maxpool-%s" % filter_size):
                 # Convolution Layer
+                #self.embedded_chars_expanded = tf.nn.dropout(self.embedded_chars_expanded , self.prev_dropout_keep_prob)
                 filter_shape = [filter_size, embedding_size, 1, num_filters]
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
