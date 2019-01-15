@@ -27,12 +27,14 @@ class MultiClassDataLoader(object):
         # self.__flags.DEFINE_string("class_data_file", "./data/kkk.cls", "Data source for the class list.")
 
         #self.__flags.DEFINE_string("train_data_file", "./twitter/test200thou_emotion_train", "Data source for the training data.")
-        self.__flags.DEFINE_string("train_data_file", "./twitter/raw_emotion_train_md60_mf100", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_emotion_train_md60_mf100", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_9_train_md60_mf1000", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_9_test_train", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_9_train_40m_md60_mf100", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_sentiment_train_md60_mf1500", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/raw_3_train_md60_mf1000", "Data source for the training data.")
+        #self.__flags.DEFINE_string("train_data_file", "./twitter/edit_emotion_wo0_train", "Data source for the training data.")
+        self.__flags.DEFINE_string("train_data_file", "./twitter/20_edit_emotion_train", "Data source for the training data.")
 
         #self.__flags.DEFINE_string("train_data_file", "./twitter/2m_emo3_train_md60_mf1000", "Data source for the training data.")
         #self.__flags.DEFINE_string("train_data_file", "./twitter/1m_dom_train", "Data source for the training data.")

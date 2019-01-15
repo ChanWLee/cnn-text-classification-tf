@@ -36,12 +36,12 @@ tf.flags.DEFINE_string("filter_sizes", "3", "Comma-separated filter sizes (defau
 tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 #tf.flags.DEFINE_float("prev_dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
 tf.flags.DEFINE_integer("batch_size", 300, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 20, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("num_epochs", 250, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_string("activation_function", "elu", "select activation_function (default: 'relu'), leaky_relu, elu, swish")
@@ -52,7 +52,8 @@ tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on 
 
 # how many stay epoch when increase loss or decrease accuracy
 epoch_1 = 2000 # 1epoch=2000steps
-stay_epochs = 10
+stay_epochs = 200
+save_npy = False
 
 data_loader = MultiClassDataLoader(tf.flags, WordDataProcessor())
 data_loader.define_flags()
@@ -116,10 +117,11 @@ except Exception as e:
     x_train, x_dev = data_loader.prepare_data_without_build_vocab(x_train, x_dev)
 
     #save vocab in project root
-    #vocab_processor.save(os.path.join("./", vocab_file))
-    #print('save vocab')
-    #np.save(os.path.join('./', npy_t), x_train)
-    #np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
+    if save_npy:
+        vocab_processor.save(os.path.join("./", vocab_file))
+        print('save vocab')
+        np.save(os.path.join('./', npy_t), x_train)
+        np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
 
 
 time_str = datetime.datetime.now().isoformat()
@@ -257,6 +259,11 @@ with tf.Graph().as_default():
             global save_accu
 
             lower_then_prev_loss = False
+            if step < epoch_1:
+                return True
+            elif step == epoch_1*stay_epochs:
+                return True
+
             if save_loss > loss-0.002:
                 save_loss = loss
                 save_accu = accuracy
