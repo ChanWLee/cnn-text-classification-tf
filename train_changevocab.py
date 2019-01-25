@@ -31,17 +31,17 @@ from word_data_processor import WordDataProcessor
         - vocab_size: 등장 단어 수
 """
 tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "3", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_string("filter_sizes", "8", "Comma-separated filter sizes (default: '3,4,5')")
 #tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
-tf.flags.DEFINE_integer("num_filters", 512, "Number of filters per filter size (default: 128)")
+tf.flags.DEFINE_integer("num_filters", 256, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 #tf.flags.DEFINE_float("prev_dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("dropout_keep_prob", 0.5, "Dropout keep probability (default: 0.5)")
+tf.flags.DEFINE_float("dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 300, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 250, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 500, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
 tf.flags.DEFINE_string("activation_function", "elu", "select activation_function (default: 'relu'), leaky_relu, elu, swish")
@@ -51,9 +51,9 @@ tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device 
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 
 # how many stay epoch when increase loss or decrease accuracy
-epoch_1 = 2000 # 1epoch=2000steps
-stay_epochs = 200
-save_npy = False
+epoch_1 = 3400# 1epoch=2000steps
+stay_epochs = 5
+save_npy = True
 
 data_loader = MultiClassDataLoader(tf.flags, WordDataProcessor())
 data_loader.define_flags()
@@ -76,7 +76,7 @@ print("{}\nLoading data...".format(time_str))
 npy_t = FLAGS.train_data_file.split('/')[2]
 vocab_file = "{}_vocab".format(npy_t)
 #vocab_file = 'vocab'
-vocab_path = os.path.join("./", "", vocab_file)
+vocab_path = os.path.join("./npy/", "", vocab_file)
 
 
 #vocab - lexicon
@@ -95,8 +95,8 @@ try:
     print("{}\n restore train, dev data...".format(datetime.datetime.now().isoformat()))
     #x_train, y_train = data_loader.load_train_data_and_labels()
     print("file: {}".format(npy_t))
-    x_train = np.load(os.path.join('./{}.npy'.format(npy_t)))
-    y_train = np.load(os.path.join('./{}_y.npy'.format(npy_t)))
+    x_train = np.load(os.path.join('./npy/{}.npy'.format(npy_t)))
+    y_train = np.load(os.path.join('./npy/{}_y.npy'.format(npy_t)))
 
     x_dev, y_dev = data_loader.load_dev_data_and_labels()
 
@@ -118,10 +118,11 @@ except Exception as e:
 
     #save vocab in project root
     if save_npy:
-        vocab_processor.save(os.path.join("./", vocab_file))
+        #vocab_processor.save(os.path.join("./npy/", vocab_file))
+        vocab_processor.save(vocab_path)
         print('save vocab')
-        np.save(os.path.join('./', npy_t), x_train)
-        np.save(os.path.join('./{}_y'.format(npy_t)), y_train)
+        np.save(os.path.join('./npy/', npy_t), x_train)
+        np.save(os.path.join('./npy/{}_y'.format(npy_t)), y_train)
 
 
 time_str = datetime.datetime.now().isoformat()
@@ -264,13 +265,13 @@ with tf.Graph().as_default():
             elif step == epoch_1*stay_epochs:
                 return True
 
-            if save_loss > loss-0.002:
+            if save_loss > loss-0.01:
                 save_loss = loss
                 save_accu = accuracy
                 lower_then_prev_loss = True
-            if not lower_then_prev_loss and save_accu <= accuracy-0.001:
+            if not lower_then_prev_loss and save_accu <= accuracy-0.005:
                 save_accu = accuracy
-                save_loss = loss
+                #save_loss = loss
                 lower_then_prev_loss = True
             return lower_then_prev_loss
 
