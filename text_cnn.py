@@ -19,7 +19,7 @@ class TextCNN(object):
 
     def __init__(
             self, batch_normalization, activation_function, sequence_length, num_classes, vocab_size,
-            embedding_size, filter_sizes, num_filters, l2_reg_lambda=0.0):
+            embedding_size, filter_sizes, num_filters, batch_size, l2_reg_lambda=0.0):
 
         chans_model = False
 
@@ -27,29 +27,33 @@ class TextCNN(object):
         self.input_x = tf.placeholder(tf.int32, [None, sequence_length], name="input_x")
         self.input_y = tf.placeholder(tf.float32, [None, num_classes], name="input_y")
         self.dropout_keep_prob = tf.placeholder(tf.float32, name="dropout_keep_prob")
-        #self.prev_dropout_keep_prob = tf.placeholder(tf.float32, name="prev_dropout_keep_prob")
         self.phase_train = tf.placeholder(tf.bool, name='phase_train')
 
         # Keeping track of l2 regularization loss (optional)
         l2_loss = tf.constant(0.0)
 
         # Embedding layer
+        #gpus = ['/gpu:0', '/gpu:1']
+        #bt_per_gpu = int(self.batch_size/len(gpus))
+        #    bt_start = bt_per_gpu * i
+        #    bt_end = bt_per_gpu * (i + 1)
+        gpus = ['/gpu:0']
         #with tf.device('/cpu:0'), tf.name_scope("embedding"):
-        with tf.device('/gpu:0'), tf.name_scope("embedding"):
-            W = tf.Variable(
-                tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
-                name="W_embed")
-            self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
-            self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
+        for i, d in enumerate(gpus):
+            with tf.device(d), tf.name_scope("embedding-%s" % i):
+                W = tf.Variable(
+                    tf.random_uniform([vocab_size, embedding_size], -1.0, 1.0),
+                    name="W_embed")
+                self.embedded_chars = tf.nn.embedding_lookup(W, self.input_x)
+                self.embedded_chars_expanded = tf.expand_dims(self.embedded_chars, -1)
 
-        with tf.name_scope("input_dropout"):
-            self.embedded_chars_expanded = tf.nn.dropout(self.embedded_chars_expanded , self.dropout_keep_prob)
+        #with tf.name_scope("input_dropout"):
+        #    self.embedded_chars_expanded = tf.nn.dropout(self.embedded_chars_expanded , self.dropout_keep_prob)
         # Create a convolution + maxpool layer for each filter size
         pooled_outputs = []
         for i, filter_size in enumerate(filter_sizes):
             with tf.name_scope("conv-maxpool-%s" % filter_size):
                 # Convolution Layer
-                #self.embedded_chars_expanded = tf.nn.dropout(self.embedded_chars_expanded , self.prev_dropout_keep_prob)
                 filter_shape = [filter_size, embedding_size, 1, num_filters]
                 W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
                 b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
@@ -65,8 +69,9 @@ class TextCNN(object):
                         self.embedded_chars_expanded,
                         W,
                         strides=[1, 1, 1, 1],
-                        padding="VALID",
-                        name="conv")
+                        padding="VALID")#,
+                        #name="conv")
+                #conv = tf.nn.dropout(conv, self.dropout_keep_prob)
                 if batch_normalization:
                     conv = self.batch_norm(conv, num_filters, self.phase_train)
                     #conv = tf.nn.local_response_normalization(conv, num_filters, self.phase_train)

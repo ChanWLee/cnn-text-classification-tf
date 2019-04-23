@@ -31,29 +31,30 @@ from word_data_processor import WordDataProcessor
         - vocab_size: 등장 단어 수
 """
 tf.flags.DEFINE_integer("embedding_dim", 32, "Dimensionality of character embedding (default: 128)")
-tf.flags.DEFINE_string("filter_sizes", "8", "Comma-separated filter sizes (default: '3,4,5')")
+tf.flags.DEFINE_string("filter_sizes", "3", "Comma-separated filter sizes (default: '3,4,5')")
 #tf.flags.DEFINE_string("filter_sizes", "3,4,5,6,7", "Comma-separated filter sizes (default: '3,4,5')")
 tf.flags.DEFINE_integer("num_filters", 256, "Number of filters per filter size (default: 128)")
 #tf.flags.DEFINE_float("dropout_keep_prob", [0.3, 0.4, 0.5, 0.6, 0.7], "Dropout keep probability (default: 0.5)")
 #tf.flags.DEFINE_float("prev_dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
 tf.flags.DEFINE_float("dropout_keep_prob", 0.8, "Dropout keep probability (default: 0.5)")
-tf.flags.DEFINE_float("l2_reg_lambda", 0.001, "L2 regularization lambda (default: 0.0)")
+tf.flags.DEFINE_float("l2_reg_lambda", 0.01, "L2 regularization lambda (default: 0.0)")
 
 # Training parameters
-tf.flags.DEFINE_integer("batch_size", 500, "Batch Size (default: 64)")
-tf.flags.DEFINE_integer("num_epochs", 50, "Number of training epochs (default: 200)")
+tf.flags.DEFINE_integer("batch_size", 64, "Batch Size (default: 64)")
+tf.flags.DEFINE_integer("num_epochs", 500, "Number of training epochs (default: 200)")
 tf.flags.DEFINE_integer("evaluate_every", 100, "Evaluate model on dev set after this many steps (default: 100)")
 tf.flags.DEFINE_integer("checkpoint_every", 100, "Save model after this many steps (default: 100)")
-tf.flags.DEFINE_string("activation_function", "elu", "select activation_function (default: 'relu'), leaky_relu, elu, swish")
-tf.flags.DEFINE_boolean("batch_normalization", True, "Do batch normalization")
+tf.flags.DEFINE_string("activation_function", "relu", "select activation_function (default: 'relu'), leaky_relu, elu, swish")
+tf.flags.DEFINE_boolean("batch_normalization", False, "Do batch normalization")
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
 tf.flags.DEFINE_boolean("log_device_placement", False, "Log placement of ops on devices")
 
 # how many stay epoch when increase loss or decrease accuracy
-epoch_1 = 3400# 1epoch=2000steps
-stay_epochs = 5
+epoch_1 = 4000# 1epoch=2000steps
+stay_epochs = 2.5
 save_npy = True
+_gap = 10000
 
 data_loader = MultiClassDataLoader(tf.flags, WordDataProcessor())
 data_loader.define_flags()
@@ -150,16 +151,17 @@ with tf.Graph().as_default():
             embedding_size=FLAGS.embedding_dim,
             filter_sizes=list(map(int, FLAGS.filter_sizes.split(","))),
             num_filters=FLAGS.num_filters,
+            batch_size=FLAGS.batch_size,
             l2_reg_lambda=FLAGS.l2_reg_lambda)
 
         # Define Training procedure
         global_step = tf.Variable(0, name="global_step", trainable=False)
         #optimizer = tf.train.AdamOptimizer(1e-2)# 0.01
-        optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
+        #optimizer = tf.train.AdamOptimizer(1e-3)#default 0.001
         #optimizer = tf.train.AdamOptimizer(learning_rate=1e-3, beta1=0.9, beta2=0.999)# 0.001
         #optimizer = tf.train.AdamOptimizer(5e-4)# 0.0005
         #optimizer = tf.train.AdamOptimizer(2e-4)# 0.0002
-        #optimizer = tf.train.AdamOptimizer(1e-4)# 0.0001
+        optimizer = tf.train.AdamOptimizer(1e-4)# 0.0001
         #optimizer = tf.train.AdamOptimizer(2e-5)# 0.00002
         #optimizer = tf.train.AdamOptimizer(1e-5)# 0.00001
         #optimizer = tf.contrib.opt.NadamOptimizer(5e-4)
@@ -265,11 +267,11 @@ with tf.Graph().as_default():
             elif step == epoch_1*stay_epochs:
                 return True
 
-            if save_loss > loss-0.01:
+            if save_loss >= loss:
                 save_loss = loss
                 save_accu = accuracy
                 lower_then_prev_loss = True
-            if not lower_then_prev_loss and save_accu <= accuracy-0.005:
+            if not lower_then_prev_loss and save_accu < accuracy:
                 save_accu = accuracy
                 #save_loss = loss
                 lower_then_prev_loss = True
@@ -282,7 +284,7 @@ with tf.Graph().as_default():
         save_step = 0
         check_loss = True
         pivot = epoch_1 * stay_epochs
-        gap = FLAGS.checkpoint_every * 20
+        #gap = FLAGS.checkpoint_every * 50
         for batch in batches:
             try:
                 x_batch, y_batch = zip(*batch)
@@ -299,9 +301,9 @@ with tf.Graph().as_default():
                     path = saver.save(sess, checkpoint_prefix, global_step=current_step)
                     save_step = current_step
                 print('\t\t\tsav_step:{}, loss:{:g}, accu:{:g}, real_gap:{}, max_gap:{}\nfile:{}'.format(
-                    save_step, save_loss, save_accu, current_step-save_step, gap, npy_t))
+                    save_step, save_loss, save_accu, current_step-save_step, _gap, npy_t))
                 # pivot 까지는 무조건 진행하고, 이후 부터는 checkpoint의 10배 될때까지 작은 loss가 없으면 break
-                if current_step >= pivot and current_step - save_step >= gap:
+                if current_step >= pivot and current_step - save_step >= _gap:
                     break
                 # print("Saved model checkpoint to {}\n".format(path))
         # serving()
